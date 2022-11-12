@@ -39,7 +39,7 @@ async function run() {
     try {
         const serviceCollection = client.db('geniusCar').collection('services')
         const orderCollection = client.db('geniusCar').collection('orders')
-
+        // serviceCollection.createIndex({ title: "text", description: "text" })
 
         app.post('/jwt', (req, res) => {
             const user = req.body;
@@ -49,9 +49,28 @@ async function run() {
 
 
         app.get('/services', async (req, res) => {
-            const query = {}
-            const cursor = serviceCollection.find(query);
+            const search = req.query.search
+            console.log(search)
+            let query = {};
+            if (!search?.length) {
+                const order = req.query.order === 'asc' ? 1 : -1;
+                const cursor = serviceCollection.find({}).sort({ price: order });
+                const services = await cursor.toArray();
+                console.log(services)
+
+                return res.send(services)
+            }
+
+            // const query = { price: { $gt: 100, $lt: 300 } }
+            // const query = { price: { $eq: 200, } }
+            // const query = { price: { $lte: 300, } }
+            // const query = { price: { $in: [40, 85, 100] } }
+            // const query = { price: { $nin: [40, 85, 100] } }
+            // const query = { $and: [{ price: { $gt: 20 } }, { price: { $gt: 100 } }] }
+            const order = req.query.order === 'asc' ? 1 : -1;
+            const cursor = serviceCollection.find({ 'title': { '$regex': search, '$options': 'i' } }).sort({ price: order });
             const services = await cursor.toArray();
+            // console.log(services)
             res.send(services)
         });
 
